@@ -1,0 +1,97 @@
+from typing import Optional
+from fastapi import FastAPI, Header, Request
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
+from jwt import encode
+from datetime import timedelta, datetime
+from pytz import timezone
+
+
+from exception import *
+
+from model import user
+
+from controller.user import *
+
+from auth import *
+
+app = FastAPI()
+
+# configure middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=False,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.get("/test")
+async def root(authorization: str = Header(None)):
+    return JSONResponse(content={"message": "test endpoint"})
+
+## 소셜 로그인 아닌경우 회원가입
+@app.post('/signup/no-social')
+async def signup_no_social(user_args:user.UserNoSocialRegister):
+    user_args = jsonable_encoder(user_args)
+    
+    code, message = user_register_no_social_login(args=user_args)
+    
+    return JSONResponse(content={"message": message, "code": code}, status_code=code)
+
+
+## 로그인 
+@app.post('/signin')
+async def signin(user_args:user.UserLogin):
+    user_args = jsonable_encoder(user_args)
+
+    code, message = user_login(args=user_args)
+    
+    ## 웹 토큰 만들어서 프론트에 전달
+    expires = datetime.strftime(datetime.now(timezone('Asia/Seoul')) + timedelta(hours=24), '%Y-%m-%d %H:%M:%S')
+    created = datetime.strftime(datetime.now(timezone('Asia/Seoul')),'%Y-%m-%d %H:%M:%S')
+
+    if code == 200:
+        token = encode(
+            {
+                'expires': expires,
+                'created': created,
+                'USER_EMAIL': user_args.get("USER_EMAIL")
+            },
+            key=secret_key
+        )
+    
+    else:
+        token = ""
+
+    return JSONResponse(content={"message": message, "code": code, "token": token}, status_code=code)
+
+# 토큰 decode test (login에서 만든 token을 (Authorization이라는 헤더에 넣어서 보냄 -> decode))
+@app.get('/getuser')
+async def get_user_info(Authorization: str = Header(None)):
+    user_email = get_user_email_from_token(Authorization)
+
+    return JSONResponse(content={"USER_EMAIL": user_email}, status_code=200)
+
+#### ERROR HANDLING ####
+
+@app.exception_handler(DBConnectionFailException)
+async def db_connection_fail_exception_handler(request: Request, exc: DBConnectionFailException):
+    return JSONResponse(status_code=400, content=exc.response_content)
+
+@app.exception_handler(DBRequestFailException)
+async def db_request_fail_exception_handler(request: Request, exc: DBRequestFailException):
+    return JSONResponse(status_code=400, content=exc.response_content)
+
+@app.exception_handler(DBPrimaryKeyDuplicateException)
+async def db_primarykey_duplicate_exception_handler(request: Request, exc: DBPrimaryKeyDuplicateException):
+    return JSONResponse(status_code=409, content=exc.response_content)
+
+@app.exception_handler(InvalidUserEmailException)
+async def invalid_user_email_exception_handler(request: Request, exc: InvalidUserEmailException):
+    return JSONResponse(status_code=400, content=exc.response_content)
+
+@app.exception_handler(TokenExpiredException)
+async def token_expired_exception_handler(request: Request, exc: TokenExpiredException):
+    return JSONResponse(status_code=400, content=exc.response_content)
