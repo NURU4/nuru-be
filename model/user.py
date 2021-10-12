@@ -12,3 +12,11 @@ class UserNoSocialRegister(BaseModel):
 class UserLogin(BaseModel):
     USER_EMAIL: str
     USER_PW: str
+
+class UserKakaoRegister(BaseModel):
+    USER_EMAIL: str
+    USER_AUTH_TYPE: str
+    USER_TOKEN: str # 이걸 Oauth객체로 두는게 나을것같긴한데 일단 두겠음
+    USER_SOCIAL_ID: str
+    
+

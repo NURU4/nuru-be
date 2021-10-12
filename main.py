@@ -35,7 +35,7 @@ async def root(authorization: str = Header(None)):
 @app.post('/signup/no-social')
 async def signup_no_social(user_args:user.UserNoSocialRegister):
     user_args = jsonable_encoder(user_args)
-    
+    # user argument 인코딩
     code, message = user_register_no_social_login(args=user_args)
     
     return JSONResponse(content={"message": message, "code": code}, status_code=code)
@@ -67,9 +67,26 @@ async def signin(user_args:user.UserLogin):
 
     return JSONResponse(content={"message": message, "code": code, "token": token}, status_code=code)
 
-# 토큰 decode test (login에서 만든 token을 (Authorization이라는 헤더에 넣어서 보냄 -> decode))
+
+@app.post('/signin/social')
+async def social_signin(user_args: user.UserKakaoRegister):
+    user_args = jsonable_encoder(user_args)
+    code, message = user_social_login(args=user_args)
+    if code == 200:
+        return JSONResponse(content={"message": message, "code": code}, status_code=code)
+
+    else:
+        code, message = user_register_social_login(args=user_args)
+        return JSONResponse(content={"message": message, "code": code}, status_code=code)
+    
+
+
+# 토큰 decode test (client가 signin에서 만든 token을 받아서 저장한 후 Authorization이라는 헤더에 넣어서 보냄 -> decode)
 @app.get('/getuser')
 async def get_user_info(Authorization: str = Header(None)):
+    """
+        getting user information needs user authorization and token should be decoded, if valid.
+    """
     user_email = get_user_email_from_token(Authorization)
 
     return JSONResponse(content={"USER_EMAIL": user_email}, status_code=200)

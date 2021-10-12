@@ -9,6 +9,9 @@ secret_key = "nuru2021"
 algorithm = ["HS256"]
 
 def get_user_email_from_token(token:str) -> str:
+    """
+        decoder: receive Authorization token from the client -> return decoded
+    """
     try:
         decoded_token = jwt.decode(token, secret_key, algorithms=algorithm)
 
