@@ -32,7 +32,7 @@ async def root(authorization: str = Header(None)):
     return JSONResponse(content={"message": "test endpoint"})
 
 ## 소셜 로그인 아닌경우 회원가입
-@app.post('/signup/no-social')
+@app.post('/signup/nuru')
 async def signup_no_social(user_args:user.UserNoSocialRegister):
     user_args = jsonable_encoder(user_args)
     # user argument 인코딩
@@ -42,7 +42,7 @@ async def signup_no_social(user_args:user.UserNoSocialRegister):
 
 
 ## 로그인 
-@app.post('/signin')
+@app.post('/signin/nuru')
 async def signin(user_args:user.UserLogin):
     user_args = jsonable_encoder(user_args)
 
@@ -67,17 +67,38 @@ async def signin(user_args:user.UserLogin):
 
     return JSONResponse(content={"message": message, "code": code, "token": token}, status_code=code)
 
+## 소셜 로그인 아닌경우 회원가입
+@app.post('/signup/social')
+async def signup_social(user_args:user.UserSocialRegister):
+    user_args = jsonable_encoder(user_args)
+    # user argument 인코딩
+    code, message = user_register_social_login(args=user_args)
+    
+    return JSONResponse(content={"message": message, "code": code}, status_code=code)
+
 
 @app.post('/signin/social')
-async def social_signin(user_args: user.UserKakaoRegister):
+async def social_signin(user_args: user.UserSocialLogin):
     user_args = jsonable_encoder(user_args)
     code, message = user_social_login(args=user_args)
-    if code == 200:
-        return JSONResponse(content={"message": message, "code": code}, status_code=code)
 
+    expires = datetime.strftime(datetime.now(timezone('Asia/Seoul')) + timedelta(hours=24), '%Y-%m-%d %H:%M:%S')
+    created = datetime.strftime(datetime.now(timezone('Asia/Seoul')),'%Y-%m-%d %H:%M:%S')
+
+    if code == 200:
+        token = encode(
+            {
+                'expires': expires,
+                'created': created,
+                'USER_EMAIL': user_args.get("USER_EMAIL")
+            },
+            key=secret_key
+        )
+    
     else:
-        code, message = user_register_social_login(args=user_args)
-        return JSONResponse(content={"message": message, "code": code}, status_code=code)
+        token = ""
+
+    return JSONResponse(content={"message": message, "code": code, "token": token}, status_code=code)
     
 
 
