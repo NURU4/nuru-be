@@ -52,7 +52,6 @@ def exec_fetch_query(query_str: str, input_params="") -> Dict[Any, Any]:
 
         if len(result) == 1:
             return result[0]
-
         return result
         
     except Exception as err:

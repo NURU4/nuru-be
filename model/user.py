@@ -23,9 +23,10 @@ class UserSocialRegister(BaseModel):
 
 # 소셜 로그인 시 로그인 모델
 class UserSocialLogin(BaseModel):
-    USER_EMAIL: str
+    USER_SOCIAL_ID: str
     USER_TOKEN: str # 이걸 Oauth객체로 두는게 나을것같긴한데 일단 두겠음
-    USER_AUTH_TYPE: str
-    USER_SOCIAL_ID: str = ''
+    USER_NM: str
 
+class UserKakaoCode(BaseModel):
+    USER_KAKAO_CODE: str
 

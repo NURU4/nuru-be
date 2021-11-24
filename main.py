@@ -1,7 +1,10 @@
+import json
 from typing import Optional
-from fastapi import FastAPI, Header, Request
+
+from pymysql import NULL
+from fastapi import FastAPI, Header, Request, Response
 from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from jwt import encode
 from datetime import timedelta, datetime
@@ -19,10 +22,11 @@ from auth import *
 app = FastAPI()
 
 # configure middleware
+
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=False,
-    allow_origins=["*"],
+    allow_credentials=True,
+    allow_origins=["http://localhost:3000"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -38,7 +42,7 @@ async def signup_no_social(user_args:user.UserNoSocialRegister):
     # user argument 인코딩
     code, message = user_register_no_social_login(args=user_args)
     
-    return JSONResponse(content={"message": message, "code": code}, status_code=code)
+    return JSONResponse(content={Header: {"Access-Control-Allow-Origin": '*'}, "message": message, "code": code}, status_code=code)
 
 
 ## 로그인 
@@ -67,20 +71,46 @@ async def signin(user_args:user.UserLogin):
 
     return JSONResponse(content={"message": message, "code": code, "token": token}, status_code=code)
 
+@app.post('/signin/social')
+async def signin_social(user_args: user.UserKakaoCode):
+    user_args = jsonable_encoder(user_args)
+    code, datas = user_kakao_login(user_args)
+    if code != 200:
+        return JSONResponse(content={"message": "invalid account", "code": code, "token": NULL}, status_code=code)
+    
+    expires = datetime.strftime(datetime.now(timezone('Asia/Seoul')) + timedelta(datas['expires_in']), '%Y-%m-%d %H:%M:%S')
+    created = datetime.strftime(datetime.now(timezone('Asia/Seoul')),'%Y-%m-%d %H:%M:%S')
+
+    if code == 200:
+        token = encode(
+            {
+                'expires': expires,
+                'created': created,
+                'social_token': datas['access_token']
+            },
+            key=secret_key
+        )
+    else:
+        token = ""
+    return JSONResponse(content={"message": "success", "code": code, "token": token, "debug": datas}, status_code=code)
+
+
 ## 소셜 로그인 아닌경우 회원가입
+"""
 @app.post('/signup/social')
 async def signup_social(user_args:user.UserSocialRegister):
     user_args = jsonable_encoder(user_args)
     # user argument 인코딩
     code, message = user_register_social_login(args=user_args)
     
+
     return JSONResponse(content={"message": message, "code": code}, status_code=code)
 
 
 @app.post('/signin/social')
 async def social_signin(user_args: user.UserSocialLogin):
     user_args = jsonable_encoder(user_args)
-    code, message = user_social_login(args=user_args)
+    code, message = user_social_login(args=user_args['code'])
 
     expires = datetime.strftime(datetime.now(timezone('Asia/Seoul')) + timedelta(hours=24), '%Y-%m-%d %H:%M:%S')
     created = datetime.strftime(datetime.now(timezone('Asia/Seoul')),'%Y-%m-%d %H:%M:%S')
@@ -99,7 +129,7 @@ async def social_signin(user_args: user.UserSocialLogin):
         token = ""
 
     return JSONResponse(content={"message": message, "code": code, "token": token}, status_code=code)
-    
+  """  
 
 
 # 토큰 decode test (client가 signin에서 만든 token을 받아서 저장한 후 Authorization이라는 헤더에 넣어서 보냄 -> decode)
@@ -109,7 +139,6 @@ async def get_user_info(Authorization: str = Header(None)):
         getting user information needs user authorization and token should be decoded, if valid.
     """
     user_email = get_user_email_from_token(Authorization)
-
     return JSONResponse(content={"USER_EMAIL": user_email}, status_code=200)
 
 #### ERROR HANDLING ####
