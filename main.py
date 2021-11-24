@@ -71,14 +71,16 @@ async def signin(user_args:user.UserLogin):
 
     return JSONResponse(content={"message": message, "code": code, "token": token}, status_code=code)
 
-@app.post('/signin/social')
-async def signin_social(user_args: user.UserKakaoCode):
+
+@app.post('/signin/kakao')
+async def signup_social(user_args: user.UserKakaoCode):
     user_args = jsonable_encoder(user_args)
-    code, datas = user_kakao_login(user_args)
+    code, user_id, expires_in = user_kakao_signin(user_args)
     if code != 200:
         return JSONResponse(content={"message": "invalid account", "code": code, "token": NULL}, status_code=code)
-    
-    expires = datetime.strftime(datetime.now(timezone('Asia/Seoul')) + timedelta(datas['expires_in']), '%Y-%m-%d %H:%M:%S')
+    token = ""
+
+    expires = datetime.strftime(datetime.now(timezone('Asia/Seoul')) + timedelta(seconds = expires_in), '%Y-%m-%d %H:%M:%S')
     created = datetime.strftime(datetime.now(timezone('Asia/Seoul')),'%Y-%m-%d %H:%M:%S')
 
     if code == 200:
@@ -86,13 +88,15 @@ async def signin_social(user_args: user.UserKakaoCode):
             {
                 'expires': expires,
                 'created': created,
-                'social_token': datas['access_token']
+                'social_token': user_id
             },
             key=secret_key
         )
     else:
         token = ""
-    return JSONResponse(content={"message": "success", "code": code, "token": token, "debug": datas}, status_code=code)
+    if len(token) > 50: token = token[:49]
+    token_message, token_code = user_token_update(user_token=token, created=created, expires=expires, email=user_id)
+    return JSONResponse(content={"message": "success", "token": token, "token_message": {"message": token_message, "code": token_code}}, status_code=code)
 
 
 ## 소셜 로그인 아닌경우 회원가입
