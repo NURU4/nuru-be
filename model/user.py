@@ -30,3 +30,5 @@ class UserSocialLogin(BaseModel):
 class UserKakaoCode(BaseModel):
     USER_KAKAO_CODE: str
 
+class UserImage(BaseModel):
+    USER_IMAGE_KEY: str

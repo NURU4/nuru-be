@@ -1,8 +1,9 @@
 import json
 from typing import Optional
+from fastapi.param_functions import Body, Form
 
 from pymysql import NULL
-from fastapi import FastAPI, Header, Request, Response
+from fastapi import FastAPI, Header, Request, Response, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
@@ -19,6 +20,8 @@ from controller.user import *
 
 from auth import *
 
+import boto3
+
 app = FastAPI()
 
 # configure middleware
@@ -29,6 +32,20 @@ app.add_middleware(
     allow_origins=["http://localhost:3000"],
     allow_methods=["*"],
     allow_headers=["*"],
+)
+"""
+s3 = boto3.resource( 
+				's3', 
+                aws_access_key_id='AKIAXGUVCKKK7DWDXFHU', 
+                aws_secret_access_key='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',
+)
+appBucket = s3.Bucket('nuruimages')
+"""
+bucket_name = "nuruimages"
+client = boto3.client(
+				's3', 
+                aws_access_key_id='AKIAXGUVCKKK7DWDXFHU', 
+                aws_secret_access_key='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',    
 )
 
 @app.get("/test")
@@ -98,42 +115,28 @@ async def signup_social(user_args: user.UserKakaoCode):
     token_message, token_code = user_token_update(user_token=token, created=created, expires=expires, email=user_id)
     return JSONResponse(content={"message": "success", "token": token, "token_message": {"message": token_message, "code": token_code}}, status_code=code)
 
+@app.post('/imageupload')
+async def image_upload(token: str=Form(...), userImage: UploadFile=Form(...)):
+    user_image_key = 'uploaded-image'
+    try:
+        #appBucket.put_object(Key=user_image_key, Body=userImage.file, ContentType=userImage.content_type, ACL='public-read')
+        client.put_object(Body=userImage.file, Bucket='nuruimages', Key=user_image_key, ContentType=userImage.content_type, ACL='public-read')
+    except Exception:
+        raise DBRequestFailException(err_msg="s3 update failed")
+    # 유저 이미지 키로 저장 및 중복 방지처리 필요
+    return JSONResponse(content={"message": "Image uploaded", "image_key": user_image_key}, status_code=200)
 
-## 소셜 로그인 아닌경우 회원가입
-"""
-@app.post('/signup/social')
-async def signup_social(user_args:user.UserSocialRegister):
-    user_args = jsonable_encoder(user_args)
-    # user argument 인코딩
-    code, message = user_register_social_login(args=user_args)
+
+
+#유저 별 인증 필요. 토큰 부재 시 비 로그인
+@app.post('/getimage')
+async def image_url(image_args: user.UserImage, Authorization: str = Header(None)):
+    image_key = image_args.USER_IMAGE_KEY
+    location = client.get_bucket_location(Bucket=bucket_name)['LocationConstraint']
+    url = "https://s3-%s.amazonaws.com/%s/%s" % (location, bucket_name, image_key)
+    return JSONResponse(content={"imageUrl": url}, status_code=200)
     
 
-    return JSONResponse(content={"message": message, "code": code}, status_code=code)
-
-
-@app.post('/signin/social')
-async def social_signin(user_args: user.UserSocialLogin):
-    user_args = jsonable_encoder(user_args)
-    code, message = user_social_login(args=user_args['code'])
-
-    expires = datetime.strftime(datetime.now(timezone('Asia/Seoul')) + timedelta(hours=24), '%Y-%m-%d %H:%M:%S')
-    created = datetime.strftime(datetime.now(timezone('Asia/Seoul')),'%Y-%m-%d %H:%M:%S')
-
-    if code == 200:
-        token = encode(
-            {
-                'expires': expires,
-                'created': created,
-                'USER_EMAIL': user_args.get("USER_EMAIL")
-            },
-            key=secret_key
-        )
-    
-    else:
-        token = ""
-
-    return JSONResponse(content={"message": message, "code": code, "token": token}, status_code=code)
-  """  
 
 
 # 토큰 decode test (client가 signin에서 만든 token을 받아서 저장한 후 Authorization이라는 헤더에 넣어서 보냄 -> decode)
