@@ -31,6 +31,8 @@ def exec_query(query_str: str, input_params=""):
         if cursor.rowcount == 0:
             return 404, "Not found"
 
+        print("ssss")
+
         return 200, "Success"
 
     except Exception as err:
