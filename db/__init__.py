@@ -5,7 +5,7 @@ from typing import Dict,Any
 ## DB CONFIG
 def get_DB_access_info():
     return {
-        "host": "13.125.156.95",  
+        "host": "13.125.255.212",  
         "user": "nuru",
         "password": "nuru2021",
         "port": 3306,
