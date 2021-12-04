@@ -59,7 +59,7 @@ async def signup_no_social(user_args:user.UserNoSocialRegister):
     # user argument 인코딩
     code, message = user_register_no_social_login(args=user_args)
     
-    return JSONResponse(content={Header: {"Access-Control-Allow-Origin": '*'}, "message": message, "code": code}, status_code=code)
+    return JSONResponse(content={"Header": {"Access-Control-Allow-Origin": '*'}, "message": message, "code": code}, status_code=code)
 
 
 ## 로그인 
