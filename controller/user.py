@@ -1,6 +1,6 @@
 from db import *
 from query import *
-import requests 
+import requests
 from datetime import timedelta, datetime
 
 import logging
@@ -30,20 +30,18 @@ def user_login(args):
     return 200, "Success"
 
 
+# def user_social_login(args):
+#     token = exec_fetch_query(USER_SOCIAL_LOGIN_QUERY, args)
 
-
-def user_social_login(args):
-    token = exec_fetch_query(USER_SOCIAL_LOGIN_QUERY, args)
-
-    if not token:
-        return 404, "User not found"
-    else: #유저는 존재하지만 소셜 토큰값이 업데이트 된 경우
-        usernm = exec_fetch_query()
-        if token['USER_TOKEN'] != args['USER_TOKEN']:
-            # 유저는 존재하지만 OAuth 토큰값이 업데이트 된 경우
-            code, _ = exec_query(USER_SOCIAL_TOKEN_UPDATE_QUERY, args)
-            return code, "Updated user token"
-    return 200, "Success"
+#     if not token:
+#         return 404, "User not found"
+#     else: #유저는 존재하지만 소셜 토큰값이 업데이트 된 경우
+#         usernm = exec_fetch_query()
+#         if token['USER_TOKEN'] != args['USER_TOKEN']:
+#             # 유저는 존재하지만 OAuth 토큰값이 업데이트 된 경우
+#             #code, _ = exec_query(USER_SOCIAL_TOKEN_UPDATE_QUERY, args)
+#             return code, "Updated user token"
+#     return 200, "Success"
 
 
 def user_kakao_getInfo(access_token, refresh_token):
@@ -73,3 +71,5 @@ def user_kakao_signin(args):
     return code, user_id, response_data['expires_in'] + response_data['refresh_token_expires_in']  
 
 
+def get_user_image_locations():
+    return 0

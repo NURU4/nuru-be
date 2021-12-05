@@ -5,6 +5,7 @@ from fastapi.param_functions import Body, Form
 from pymysql import NULL
 from fastapi import FastAPI, Header, Request, Response, File, Form, UploadFile
 from fastapi.responses import JSONResponse
+from pymysql.connections import DEBUG
 from starlette.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from jwt import encode
@@ -105,19 +106,22 @@ async def signup_social(user_args: user.UserKakaoCode):
             {
                 'expires': expires,
                 'created': created,
-                'social_token': user_id
-            },
+                'USER_EMAIL': user_id
+            },  
             key=secret_key
         )
     else:
         token = ""
-    if len(token) > 50: token = token[:49]
     token_message, token_code = user_token_update(user_token=token, created=created, expires=expires, email=user_id)
     return JSONResponse(content={"message": "success", "token": token, "token_message": {"message": token_message, "code": token_code}}, status_code=code)
 
 @app.post('/imageupload')
 async def image_upload(token: str=Form(...), userImage: UploadFile=Form(...)):
-    user_image_key = 'uploaded-image'
+    user_image_key = exec_fetch_query(USER_ID_QUERY, {'USER_TOKEN': token})
+    user_image_key = user_image_key['USER_EMAIL']
+    # myobjects = client.list_objects_v2(Bucket='nuruimages', prefix=user_image_key)
+    # response = myobjects['ResponseMetadata']
+    user_image_key += "/" + userImage.filename
     try:
         #appBucket.put_object(Key=user_image_key, Body=userImage.file, ContentType=userImage.content_type, ACL='public-read')
         client.put_object(Body=userImage.file, Bucket='nuruimages', Key=user_image_key, ContentType=userImage.content_type, ACL='public-read')
@@ -129,12 +133,12 @@ async def image_upload(token: str=Form(...), userImage: UploadFile=Form(...)):
 
 
 #유저 별 인증 필요. 토큰 부재 시 비 로그인
-@app.post('/getimage')
-async def image_url(image_args: user.UserImage, Authorization: str = Header(None)):
-    image_key = image_args.USER_IMAGE_KEY
-    location = client.get_bucket_location(Bucket=bucket_name)['LocationConstraint']
-    url = "https://s3-%s.amazonaws.com/%s/%s" % (location, bucket_name, image_key)
-    return JSONResponse(content={"imageUrl": url}, status_code=200)
+@app.get('/getimages')
+async def image_url(Authorization: str = Header(None)):
+    user_image_key = get_user_email_from_token(Authorization) + "/"
+    # location = client.get_bucket_location(Bucket=bucket_name)['LocationConstraint']
+    # url = "https://s3-%s.amazonaws.com/%s/%s" % (location, bucket_name, image_key)
+    return JSONResponse(content={"useremail": user_image_key}, status_code=200)
     
 
 
