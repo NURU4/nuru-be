@@ -21,7 +21,7 @@ from controller.user import *
 
 from auth import *
 
-import boto3
+
 
 app = FastAPI()
 
@@ -34,20 +34,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-"""
-s3 = boto3.resource( 
-				's3', 
-                aws_access_key_id='AKIAXGUVCKKK7DWDXFHU', 
-                aws_secret_access_key='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',
-)
-appBucket = s3.Bucket('nuruimages')
-"""
-bucket_name = "nuruimages"
-client = boto3.client(
-				's3', 
-                aws_access_key_id='AKIAXGUVCKKK7DWDXFHU', 
-                aws_secret_access_key='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',    
-)
+
+
 
 @app.get("/test")
 async def root(authorization: str = Header(None)):
@@ -116,19 +104,12 @@ async def signup_social(user_args: user.UserKakaoCode):
     return JSONResponse(content={"message": "success", "token": token, "token_message": {"message": token_message, "code": token_code}}, status_code=code)
 
 @app.post('/imageupload')
-async def image_upload(token: str=Form(...), userImage: UploadFile=Form(...)):
-    user_image_key = exec_fetch_query(USER_ID_QUERY, {'USER_TOKEN': token})
-    user_image_key = user_image_key['USER_EMAIL']
-    # myobjects = client.list_objects_v2(Bucket='nuruimages', prefix=user_image_key)
-    # response = myobjects['ResponseMetadata']
-    user_image_key += "/" + userImage.filename
-    try:
-        #appBucket.put_object(Key=user_image_key, Body=userImage.file, ContentType=userImage.content_type, ACL='public-read')
-        client.put_object(Body=userImage.file, Bucket='nuruimages', Key=user_image_key, ContentType=userImage.content_type, ACL='public-read')
-    except Exception:
-        raise DBRequestFailException(err_msg="s3 update failed")
+async def image_upload(userImage: UploadFile=Form(...), Authorization: str=Header(None)):
+    user_image_key = get_user_email_from_token(Authorization) + "/"
+    user_image_key += userImage.filename
+    code, message = s3_upload_image(userImage, user_image_key)
     # 유저 이미지 키로 저장 및 중복 방지처리 필요
-    return JSONResponse(content={"message": "Image uploaded", "image_key": user_image_key}, status_code=200)
+    return JSONResponse(content={"message": message, "image_key": user_image_key}, status_code=code)
 
 
 
@@ -136,9 +117,11 @@ async def image_upload(token: str=Form(...), userImage: UploadFile=Form(...)):
 @app.get('/getimages')
 async def image_url(Authorization: str = Header(None)):
     user_image_key = get_user_email_from_token(Authorization) + "/"
-    # location = client.get_bucket_location(Bucket=bucket_name)['LocationConstraint']
-    # url = "https://s3-%s.amazonaws.com/%s/%s" % (location, bucket_name, image_key)
-    return JSONResponse(content={"useremail": user_image_key}, status_code=200)
+    myobjects = client.list_objects_v2(Bucket='nuruimages', Prefix=user_image_key)
+    contents = myobjects['Contents']
+    response = list(map(lambda x: x['Key'], contents))
+    urls = list(map(lambda x: get_user_image_locations(x) , response))
+    return JSONResponse(content={"useremail": user_image_key, "list": urls}, status_code=200)
     
 
 
@@ -164,7 +147,7 @@ async def db_request_fail_exception_handler(request: Request, exc: DBRequestFail
 
 @app.exception_handler(DBPrimaryKeyDuplicateException)
 async def db_primarykey_duplicate_exception_handler(request: Request, exc: DBPrimaryKeyDuplicateException):
-    return JSONResponse(status_code=409, content=exc.response_content)
+    return JSONResponse(status_code=400, content=exc.response_content)
 
 @app.exception_handler(InvalidUserEmailException)
 async def invalid_user_email_exception_handler(request: Request, exc: InvalidUserEmailException):
