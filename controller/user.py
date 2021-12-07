@@ -60,7 +60,7 @@ def user_kakao_getInfo(access_token, refresh_token):
         if response.status_code != 200: return response.status_code, "no user id"
     response_data = response.json()
     user_kakao_id = str(response_data['id'])
-    args = {'USER_SOCIAL_YN': "Y", 'USER_AUTH_TYPE': "KAKA  O", 'USER_SOCIAL_ID': user_kakao_id}
+    args = {'USER_SOCIAL_YN': "Y", 'USER_AUTH_TYPE': "KAKAO", 'USER_SOCIAL_ID': user_kakao_id}
     result = exec_fetch_query(USER_SOCIAL_ACCOUNT_QUERY, args)
     if not result:
         code, _ = exec_query(USER_SOCIAL_REGISTER_QUERY, args)

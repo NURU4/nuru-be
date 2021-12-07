@@ -101,7 +101,7 @@ async def signup_social(user_args: user.UserKakaoCode):
     else:
         token = ""
     token_message, token_code = user_token_update(user_token=token, created=created, expires=expires, email=user_id)
-    return JSONResponse(content={"message": "success", "token": token, "token_message": {"message": token_message, "code": token_code}}, status_code=code)
+    return JSONResponse(content={"message": "success", "token": token}, status_code=code)
 
 @app.post('/imageupload')
 async def image_upload(userImage: UploadFile=Form(...), Authorization: str=Header(None)):
