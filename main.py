@@ -81,9 +81,9 @@ async def signin(user_args:user.UserLogin):
 
 
 @app.post('/signin/kakao')  
-async def signup_social(user_args: user.UserKakaoCode):
+async def signup_social(user_args: user.UserKakaoCode, Referer : Optional[str] = Header(None)):
     user_args = jsonable_encoder(user_args)
-    code, user_id, expires_in = user_kakao_signin(user_args)
+    code, user_id, expires_in = user_kakao_signin(user_args, Referer)
     if code != 200:
         return JSONResponse(content={"message": "invalid account", "code": code, "token": NULL}, status_code=code)
     token = ""
