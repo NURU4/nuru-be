@@ -6,7 +6,7 @@ from pymysql import NULL
 from fastapi import FastAPI, Header, Request, Response, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 from pymysql.connections import DEBUG
-from starlette.middleware.cors import CORSMiddleware
+# from starlette.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from jwt import encode
 from datetime import timedelta, datetime
@@ -80,7 +80,7 @@ async def signin(user_args:user.UserLogin):
     return JSONResponse(content={"message": message, "code": code, "token": token}, status_code=code)
 
 
-@app.post('/signin/kakao')
+@app.post('/signin/kakao')  
 async def signup_social(user_args: user.UserKakaoCode):
     user_args = jsonable_encoder(user_args)
     code, user_id, expires_in = user_kakao_signin(user_args)
