@@ -70,7 +70,7 @@ def user_kakao_getInfo(access_token, refresh_token):
 
 def user_kakao_signin(args, Referer):
     # datas = {'grant_type': "authorization_code", 'client_id': "c38ee04e16631dabbb8e43a1ed540d05", 'redirect_uri': "http://localhost:3000/oauth/callback/kakao-login", 'code': args['USER_KAKAO_CODE']}
-    datas = {'grant_type': "authorization_code", 'client_id': "c38ee04e16631dabbb8e43a1ed540d05", 'redirect_uri': "https://nuru.kr/oauth/callback/kakao-login", 'code': args['USER_KAKAO_CODE']}
+    datas = {'grant_type': "authorization_code", 'client_id': "c38ee04e16631dabbb8e43a1ed540d05", 'redirect_uri': "https://www.nuru.kr/oauth/callback/kakao-login", 'code': args['USER_KAKAO_CODE']}
     if "localhost" in Referer:
         datas = {'grant_type': "authorization_code", 'client_id': "c38ee04e16631dabbb8e43a1ed540d05", 'redirect_uri': "http://localhost:3000/oauth/callback/kakao-login", 'code': args['USER_KAKAO_CODE']}
     response = requests.post(url="https://kauth.kakao.com/oauth/token", data=datas)
