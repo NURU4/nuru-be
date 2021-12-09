@@ -30,7 +30,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -78,7 +78,7 @@ async def signin(user_args:user.UserLogin):
     return JSONResponse(content={"message": message, "code": code, "token": token}, status_code=code)
 
 
-@app.post('/signin/kakao')
+@app.post('/signin/kakao')  
 async def signup_social(user_args: user.UserKakaoCode):
     user_args = jsonable_encoder(user_args)
     code, user_id, expires_in = user_kakao_signin(user_args)
