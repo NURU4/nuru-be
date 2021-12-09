@@ -41,7 +41,7 @@ app.add_middleware(
 
 @app.get("/test")
 async def root(authorization: str = Header(None)):
-    return JSONResponse(content={"message": "test endpoint"})
+    return JSONResponse(content={"message": "test endpoints"})
 
 ## 소셜 로그인 아닌경우 회원가입
 @app.post('/signup/nuru')
